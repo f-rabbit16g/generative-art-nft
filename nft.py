@@ -71,7 +71,8 @@ def generate_single_image(filepaths, output_filename=None):
     for filepath in filepaths[1:]:
         if filepath.endswith('.png'):
             img = Image.open(os.path.join('assets', filepath))
-            bg.paste(img, (0,0), img)
+            #bg.paste(img, (0,0), img)
+            bg = Image.alpha_composite(bg, img)
     
     # Save the final image into desired location
     if output_filename is not None:
@@ -115,6 +116,13 @@ def select_index(cum_rarities, rand):
     return None
 
 
+def get_link_value(linklist, trait_set):
+    for link in linklist.keys():
+        if link in trait_set:
+            return linklist[link]
+    raise Exception("linklist don't find in trait_set")
+
+
 # Generate a set of traits given rarities
 def generate_trait_set_from_config():
     
@@ -130,15 +138,21 @@ def generate_trait_set_from_config():
 
         # Select an element index based on random number and cumulative rarity weights
         idx = select_index(cum_rarities, rand_num)
+        try:
+            if layer["link"]:
+                trait_value = get_link_value(layer["link"], trait_set)
+                trait_set.append(trait_value)
+                trait_path = os.path.join(layer["directory"], trait_value)
+                trait_paths.append(trait_path)
+        except KeyError:
+            # Add selected trait to trait set
+            trait_set.append(traits[idx])
 
-        # Add selected trait to trait set
-        trait_set.append(traits[idx])
+            # Add trait path to trait paths if the trait has been selected
+            if traits[idx] is not None:
+                trait_path = os.path.join(layer["directory"], traits[idx])
+                trait_paths.append(trait_path)
 
-        # Add trait path to trait paths if the trait has been selected
-        if traits[idx] is not None:
-            trait_path = os.path.join(layer['directory'], traits[idx])
-            trait_paths.append(trait_path)
-        
     return trait_set, trait_paths
 
 
